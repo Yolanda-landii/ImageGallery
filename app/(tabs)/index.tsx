@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, Alert, Platform, TouchableOpacity } from 'react
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import * as Location from 'expo-location';
+import * as MediaLibrary from 'expo-media-library';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ImageList from '../components/imageList';
 import ImageModal from '../components/imageModal';
+import MapView, { Marker } from 'react-native-maps'; 
 
 const ImageCapture = () => {
   const [images, setImages] = useState([]);
@@ -16,24 +18,23 @@ const ImageCapture = () => {
     try {
       const savedImages = await AsyncStorage.getItem('images');
       if (savedImages) {
-        setImages(JSON.parse(savedImages)); 
+        setImages(JSON.parse(savedImages));
       }
     } catch (error) {
       console.error('Error loading images:', error);
     }
   };
 
-  // Save images to AsyncStorage
   const saveImages = async (newImages) => {
     try {
-      await AsyncStorage.setItem('images', JSON.stringify(newImages)); // Stringify the images array
+      await AsyncStorage.setItem('images', JSON.stringify(newImages));
     } catch (error) {
       console.error('Error saving images:', error);
     }
   };
 
   useEffect(() => {
-    loadImages(); // Load images when the app starts
+    loadImages(); 
   }, []);
 
   const captureImage = async () => {
@@ -43,6 +44,7 @@ const ImageCapture = () => {
       try {
         const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
         const locationPermission = await Location.requestForegroundPermissionsAsync();
+        const mediaLibraryPermission = await MediaLibrary.requestPermissionsAsync();
 
         if (!cameraPermission.granted) {
           Alert.alert('Permission required', 'Camera permission is needed to capture images.');
@@ -51,6 +53,11 @@ const ImageCapture = () => {
 
         if (!locationPermission.granted) {
           Alert.alert('Permission required', 'Location permission is needed to save geolocation data.');
+          return;
+        }
+
+        if (!mediaLibraryPermission.granted) {
+          Alert.alert('Permission required', 'Media library permission is needed to save the image to gallery.');
           return;
         }
 
@@ -65,16 +72,20 @@ const ImageCapture = () => {
 
           await FileSystem.moveAsync({ from: uri, to: destinationPath });
 
+          await MediaLibrary.createAssetAsync(destinationPath);
+
           const newImage = {
             uri: destinationPath,
             timestamp,
             geolocation,
             fileName,
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,  
           };
 
           const updatedImages = [...images, newImage];
-          setImages(updatedImages); // Update the images state
-          saveImages(updatedImages); // Save the updated images list to AsyncStorage
+          setImages(updatedImages); 
+          saveImages(updatedImages); 
 
           Alert.alert('Success', `Image saved to: ${destinationPath}`);
         }
@@ -98,6 +109,30 @@ const ImageCapture = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Camera</Text>
+      
+      <View style={styles.mapContainer}>
+        <MapView
+          style={styles.map}
+          initialRegion={{
+            latitude: -30.5595, 
+            longitude: 22.9375, 
+            latitudeDelta: 10.0,  
+            longitudeDelta: 10.0, 
+          }}
+        >
+          {images.map((image, index) => (
+            <Marker
+              key={index}
+              coordinate={{
+                latitude: image.latitude,
+                longitude: image.longitude,
+              }}
+              title={`Image taken at ${image.timestamp}`}
+            />
+          ))}
+        </MapView>
+      </View>
+
       <View style={styles.cameraContainer}>
         <ImageList images={images} onImagePress={openImage} />
       </View>
@@ -117,6 +152,12 @@ const styles = StyleSheet.create({
   cameraContainer: {
     flex: 1,
     padding: 16,
+  },
+  mapContainer: {
+    flex: 2,  
+  },
+  map: {
+    flex: 1,  
   },
   bottomBar: {
     alignItems: 'center',
