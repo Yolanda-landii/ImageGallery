@@ -82,15 +82,18 @@ const ImageCapture = () => {
           geolocation: `${location.coords.latitude}, ${location.coords.longitude}`,
         };
   
-        // Immediately update images and filteredImages state
-        setImages((prevImages) => [...prevImages, newImage]);
-        setFilteredImages((prevFilteredImages) => [...prevFilteredImages, newImage]);
-  
+        // Check if image already exists in the state
+        setImages((prevImages) => {
+          const updatedImages = [...prevImages];
+          if (!updatedImages.some(image => image.filePath === newImage.filePath)) {
+            updatedImages.push(newImage);
+          }
+          setFilteredImages(updatedImages); // Update filtered images too
+          return updatedImages;
+        });
   
         const imageId = await addImage(newImage.filePath, newImage.timestamp, newImage.geolocation);
         console.log('Image added to SQLite database with ID:', imageId);
-  
-        filterImages(searchQuery);
       }
     } catch (error) {
       console.error('Error capturing image:', error);
