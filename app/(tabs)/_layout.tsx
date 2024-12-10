@@ -1,11 +1,18 @@
+// _layout.tsx
+import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
+import { initializeDatabase } from './Utils/database';
 
-export default function TabsLayout() {
+const Layout = () => {
+  useEffect(() => {
+    initializeDatabase();
+  }, []);
+
   return (
     <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
+      screenOptions={{headerShown: false,}}
     />
   );
-}
+};
+
+export default Layout;

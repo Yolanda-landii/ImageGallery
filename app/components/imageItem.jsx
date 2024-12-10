@@ -3,9 +3,9 @@ import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 
 const ImageItem = ({ image, onPress }) => (
   <TouchableOpacity onPress={() => onPress(image)} style={styles.imageItem}>
-    <Image source={{ uri: image.uri }} style={styles.thumbnail} />
+    <Image source={{ uri: image.filePath }} style={styles.thumbnail} />
     <View style={styles.metadata}>
-      <Text style={styles.metadataText}>File Name: {image.fileName}</Text>
+      <Text style={styles.metadataText}>File Path: {image.filePath}</Text>
       <Text style={styles.metadataText}>Timestamp: {image.timestamp}</Text>
       <Text style={styles.metadataText}>Location: {image.geolocation}</Text>
     </View>
